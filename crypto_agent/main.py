@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -44,10 +45,14 @@ async def signals() -> list[dict[str, Any]]:
     return last_scan
 
 
-def scheduler_startup() -> None:
+def run_scan_sync() -> None:
+    asyncio.run(scan())
+
+
+def start_scheduler() -> None:
     scheduler = BackgroundScheduler()
-    scheduler.add_job(scan, "interval", hours=1)
+    scheduler.add_job(run_scan_sync, "interval", hours=1, id="hourly_scan")
     scheduler.start()
 
 
-app.add_event_handler("startup", scheduler_startup)
+app.add_event_handler("startup", start_scheduler)
