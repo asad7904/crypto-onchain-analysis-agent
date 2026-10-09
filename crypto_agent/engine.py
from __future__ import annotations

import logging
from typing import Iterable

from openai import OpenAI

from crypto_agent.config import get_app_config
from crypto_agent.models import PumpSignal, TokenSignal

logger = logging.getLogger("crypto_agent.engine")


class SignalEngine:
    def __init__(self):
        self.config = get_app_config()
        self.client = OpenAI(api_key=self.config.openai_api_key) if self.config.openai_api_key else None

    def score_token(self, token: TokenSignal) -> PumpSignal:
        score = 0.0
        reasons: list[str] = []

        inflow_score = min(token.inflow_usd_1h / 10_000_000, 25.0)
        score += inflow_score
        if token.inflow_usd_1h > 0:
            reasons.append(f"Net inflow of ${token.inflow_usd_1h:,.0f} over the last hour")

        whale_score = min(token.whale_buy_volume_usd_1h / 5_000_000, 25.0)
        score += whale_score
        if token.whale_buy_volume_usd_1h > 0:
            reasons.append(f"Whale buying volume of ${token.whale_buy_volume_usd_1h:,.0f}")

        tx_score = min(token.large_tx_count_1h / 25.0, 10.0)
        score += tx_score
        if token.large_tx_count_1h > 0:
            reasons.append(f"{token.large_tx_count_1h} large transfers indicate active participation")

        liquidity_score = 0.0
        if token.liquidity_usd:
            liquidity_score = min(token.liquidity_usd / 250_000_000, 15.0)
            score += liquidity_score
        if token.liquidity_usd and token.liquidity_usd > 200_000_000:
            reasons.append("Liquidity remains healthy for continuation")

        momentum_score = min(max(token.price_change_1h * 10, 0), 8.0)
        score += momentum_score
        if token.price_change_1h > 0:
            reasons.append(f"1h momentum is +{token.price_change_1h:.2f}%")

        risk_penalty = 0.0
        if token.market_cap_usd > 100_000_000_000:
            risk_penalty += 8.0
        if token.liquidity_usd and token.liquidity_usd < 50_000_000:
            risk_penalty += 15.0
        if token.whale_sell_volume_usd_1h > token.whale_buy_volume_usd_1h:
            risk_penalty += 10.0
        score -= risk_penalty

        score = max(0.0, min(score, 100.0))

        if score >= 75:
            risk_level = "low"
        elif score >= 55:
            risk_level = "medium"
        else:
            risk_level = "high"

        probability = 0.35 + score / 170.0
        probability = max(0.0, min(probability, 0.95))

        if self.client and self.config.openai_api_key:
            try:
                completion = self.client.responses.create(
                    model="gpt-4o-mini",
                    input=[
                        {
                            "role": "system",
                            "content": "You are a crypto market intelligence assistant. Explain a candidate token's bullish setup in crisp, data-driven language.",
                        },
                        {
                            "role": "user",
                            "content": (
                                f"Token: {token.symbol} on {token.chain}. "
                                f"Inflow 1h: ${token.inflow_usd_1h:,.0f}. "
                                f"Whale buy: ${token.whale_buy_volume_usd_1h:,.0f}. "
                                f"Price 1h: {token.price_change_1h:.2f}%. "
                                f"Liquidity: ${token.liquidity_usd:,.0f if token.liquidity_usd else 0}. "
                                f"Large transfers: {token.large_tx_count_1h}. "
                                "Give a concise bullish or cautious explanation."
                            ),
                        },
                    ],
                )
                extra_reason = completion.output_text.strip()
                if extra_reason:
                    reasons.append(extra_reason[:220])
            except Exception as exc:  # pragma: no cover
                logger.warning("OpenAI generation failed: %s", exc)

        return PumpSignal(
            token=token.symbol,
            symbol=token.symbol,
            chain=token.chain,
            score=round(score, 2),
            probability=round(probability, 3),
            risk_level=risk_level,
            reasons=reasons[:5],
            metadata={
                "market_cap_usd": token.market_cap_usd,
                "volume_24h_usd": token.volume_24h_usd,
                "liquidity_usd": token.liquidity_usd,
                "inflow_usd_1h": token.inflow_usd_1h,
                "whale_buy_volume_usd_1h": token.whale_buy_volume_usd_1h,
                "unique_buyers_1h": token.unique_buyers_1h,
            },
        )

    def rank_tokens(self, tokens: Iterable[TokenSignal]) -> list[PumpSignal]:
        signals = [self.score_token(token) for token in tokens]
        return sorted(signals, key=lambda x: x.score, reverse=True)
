@@ -1,0 +1,319 @@
+from __future__ import annotations
+
+import json
+import logging
+import random
+from typing import Iterable
+
+import httpx
+
+from crypto_agent.config import get_app_config
+from crypto_agent.models import TokenSignal
+
+logger = logging.getLogger("crypto_agent.collectors")
+
+
+class BaseCollector:
+    def __init__(self, chain: str):
+        self.chain = chain
+        self.config = get_app_config()
+
+    async def fetch_token_market_data(self) -> list[dict]:
+        raise NotImplementedError
+
+
+class EthereumCollector(BaseCollector):
+    def __init__(self):
+        super().__init__("ethereum")
+
+    async def fetch_token_market_data(self) -> list[dict]:
+        payload = [
+            {
+                "symbol": "ETH",
+                "name": "Ethereum",
+                "chain": "ethereum",
+                "price_usd": 3510.0,
+                "market_cap_usd": 421000000000.0,
+                "volume_24h_usd": 18400000000.0,
+                "liquidity_usd": 1000000000.0,
+                "inflow_usd_1h": 9200000.0,
+                "whale_buy_volume_usd_1h": 4200000.0,
+                "whale_sell_volume_usd_1h": 1000000.0,
+                "large_tx_count_1h": 220,
+                "unique_buyers_1h": 680,
+                "wallet_growth_1h": 44,
+                "price_change_1h": 1.8,
+                "price_change_24h": 5.8,
+                "contract_address": None,
+            },
+            {
+                "symbol": "LINK",
+                "name": "Chainlink",
+                "chain": "ethereum",
+                "price_usd": 18.7,
+                "market_cap_usd": 10900000000.0,
+                "volume_24h_usd": 640000000.0,
+                "liquidity_usd": 500000000.0,
+                "inflow_usd_1h": 24000000.0,
+                "whale_buy_volume_usd_1h": 8800000.0,
+                "whale_sell_volume_usd_1h": 1500000.0,
+                "large_tx_count_1h": 120,
+                "unique_buyers_1h": 320,
+                "wallet_growth_1h": 29,
+                "price_change_1h": 2.5,
+                "price_change_24h": 8.1,
+                "contract_address": "0x514910771af9ca656af840dff83e8264ecf986ca",
+            },
+            {
+                "symbol": "UNI",
+                "name": "Uniswap",
+                "chain": "ethereum",
+                "price_usd": 11.9,
+                "market_cap_usd": 7200000000.0,
+                "volume_24h_usd": 380000000.0,
+                "liquidity_usd": 320000000.0,
+                "inflow_usd_1h": 17000000.0,
+                "whale_buy_volume_usd_1h": 6100000.0,
+                "whale_sell_volume_usd_1h": 1200000.0,
+                "large_tx_count_1h": 88,
+                "unique_buyers_1h": 200,
+                "wallet_growth_1h": 18,
+                "price_change_1h": 2.2,
+                "price_change_24h": 6.5,
+                "contract_address": "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984",
+            },
+        ]
+
+        if self.config.etherscan_api_key:
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    resp = await client.get(
+                        "https://api.etherscan.io/api",
+                        params={
+                            "module": "stats",
+                            "action": "tokensupply",
+                            "contractaddress": "0x514910771af9ca656af840dff83e8264ecf986ca",
+                            "apikey": self.config.etherscan_api_key,
+                        },
+                    )
+                    resp.raise_for_status()
+                    logger.info("Ethereum collector made a live Etherscan request")
+            except Exception as exc:  # pragma: no cover
+                logger.warning("Ethereum live data fetch failed: %s", exc)
+
+        return payload
+
+
+class SolanaCollector(BaseCollector):
+    def __init__(self):
+        super().__init__("solana")
+
+    async def fetch_token_market_data(self) -> list[dict]:
+        payload = [
+            {
+                "symbol": "SOL",
+                "name": "Solana",
+                "chain": "solana",
+                "price_usd": 168.0,
+                "market_cap_usd": 76000000000.0,
+                "volume_24h_usd": 5200000000.0,
+                "liquidity_usd": 2100000000.0,
+                "inflow_usd_1h": 34000000.0,
+                "whale_buy_volume_usd_1h": 15000000.0,
+                "whale_sell_volume_usd_1h": 2000000.0,
+                "large_tx_count_1h": 290,
+                "unique_buyers_1h": 980,
+                "wallet_growth_1h": 72,
+                "price_change_1h": 2.8,
+                "price_change_24h": 9.4,
+                "contract_address": None,
+            },
+            {
+                "symbol": "JUP",
+                "name": "Jupiter",
+                "chain": "solana",
+                "price_usd": 1.1,
+                "market_cap_usd": 1200000000.0,
+                "volume_24h_usd": 420000000.0,
+                "liquidity_usd": 300000000.0,
+                "inflow_usd_1h": 12000000.0,
+                "whale_buy_volume_usd_1h": 6200000.0,
+                "whale_sell_volume_usd_1h": 950000.0,
+                "large_tx_count_1h": 110,
+                "unique_buyers_1h": 410,
+                "wallet_growth_1h": 35,
+                "price_change_1h": 3.2,
+                "price_change_24h": 12.2,
+                "contract_address": "So11111111111111111111111111111111111111112",
+            },
+            {
+                "symbol": "RAY",
+                "name": "Raydium",
+                "chain": "solana",
+                "price_usd": 8.5,
+                "market_cap_usd": 2100000000.0,
+                "volume_24h_usd": 310000000.0,
+                "liquidity_usd": 280000000.0,
+                "inflow_usd_1h": 9000000.0,
+                "whale_buy_volume_usd_1h": 4400000.0,
+                "whale_sell_volume_usd_1h": 700000.0,
+                "large_tx_count_1h": 96,
+                "unique_buyers_1h": 270,
+                "wallet_growth_1h": 26,
+                "price_change_1h": 2.6,
+                "price_change_24h": 9.8,
+                "contract_address": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+            },
+        ]
+
+        if self.config.solana_rpc_url:
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    body = {
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "getRecentPerformanceSamples",
+                        "params": [1],
+                    }
+                    resp = await client.post(self.config.solana_rpc_url, json=body)
+                    resp.raise_for_status()
+                    logger.info("Solana collector made a live RPC request")
+            except Exception as exc:  # pragma: no cover
+                logger.warning("Solana live data fetch failed: %s", exc)
+
+        return payload
+
+
+class BaseChainCollector(BaseCollector):
+    def __init__(self, chain: str):
+        super().__init__(chain)
+
+    async def fetch_token_market_data(self) -> list[dict]:
+        demo_tokens = [
+            {
+                "symbol": "ARB",
+                "name": "Arbitrum",
+                "chain": "arbitrum",
+                "price_usd": 1.2,
+                "market_cap_usd": 5200000000.0,
+                "volume_24h_usd": 500000000.0,
+                "liquidity_usd": 430000000.0,
+                "inflow_usd_1h": 14000000.0,
+                "whale_buy_volume_usd_1h": 6300000.0,
+                "whale_sell_volume_usd_1h": 1100000.0,
+                "large_tx_count_1h": 112,
+                "unique_buyers_1h": 330,
+                "wallet_growth_1h": 24,
+                "price_change_1h": 2.1,
+                "price_change_24h": 6.1,
+                "contract_address": None,
+            },
+            {
+                "symbol": "MATIC",
+                "name": "Polygon",
+                "chain": "polygon",
+                "price_usd": 0.75,
+                "market_cap_usd": 8400000000.0,
+                "volume_24h_usd": 430000000.0,
+                "liquidity_usd": 360000000.0,
+                "inflow_usd_1h": 10000000.0,
+                "whale_buy_volume_usd_1h": 3400000.0,
+                "whale_sell_volume_usd_1h": 900000.0,
+                "large_tx_count_1h": 92,
+                "unique_buyers_1h": 240,
+                "wallet_growth_1h": 16,
+                "price_change_1h": 1.6,
+                "price_change_24h": 5.0,
+                "contract_address": None,
+            },
+        ]
+        if self.chain == "base":
+            return demo_tokens[:1]
+        if self.chain == "polygon":
+            return demo_tokens[1:]
+        return demo_tokens
+
+
+class MultiChainCollector:
+    def __init__(self):
+        self.collectors = {
+            "ethereum": EthereumCollector(),
+            "solana": SolanaCollector(),
+            "base": BaseChainCollector("base"),
+            "polygon": BaseChainCollector("polygon"),
+        }
+
+    async def collect(self) -> list[TokenSignal]:
+        snapshots: list[TokenSignal] = []
+
+        for chain_name, collector in self.collectors.items():
+            try:
+                market_data = await collector.fetch_token_market_data()
+                for row in market_data:
+                    snapshots.append(
+                        TokenSignal(
+                            symbol=row["symbol"],
+                            name=row["name"],
+                            chain=row["chain"],
+                            contract_address=row.get("contract_address"),
+                            price_usd=row["price_usd"],
+                            market_cap_usd=row["market_cap_usd"],
+                            volume_24h_usd=row["volume_24h_usd"],
+                            liquidity_usd=row.get("liquidity_usd"),
+                            inflow_usd_1h=row["inflow_usd_1h"],
+                            whale_buy_volume_usd_1h=row["whale_buy_volume_usd_1h"],
+                            whale_sell_volume_usd_1h=row["whale_sell_volume_usd_1h"],
+                            large_tx_count_1h=row["large_tx_count_1h"],
+                            unique_buyers_1h=row["unique_buyers_1h"],
+                            wallet_growth_1h=row["wallet_growth_1h"],
+                            price_change_1h=row["price_change_1h"],
+                            price_change_24h=row["price_change_24h"],
+                        )
+                    )
+            except Exception as exc:  # pragma: no cover
+                logger.warning("Collector failed for %s: %s", chain_name, exc)
+
+        if not snapshots:
+            logger.warning("No market data available; using synthetic demo fallback")
+            return self._synthetic_fallback()
+
+        return snapshots
+
+    def _synthetic_fallback(self) -> list[TokenSignal]:
+        tokens = [
+            TokenSignal(
+                symbol="SOL",
+                name="Solana",
+                chain="solana",
+                price_usd=168.0,
+                market_cap_usd=76000000000.0,
+                volume_24h_usd=5200000000.0,
+                liquidity_usd=2100000000.0,
+                inflow_usd_1h=34000000.0,
+                whale_buy_volume_usd_1h=15000000.0,
+                whale_sell_volume_usd_1h=2000000.0,
+                large_tx_count_1h=290,
+                unique_buyers_1h=980,
+                wallet_growth_1h=72,
+                price_change_1h=2.8,
+                price_change_24h=9.4,
+            ),
+            TokenSignal(
+                symbol="ETH",
+                name="Ethereum",
+                chain="ethereum",
+                price_usd=3510.0,
+                market_cap_usd=421000000000.0,
+                volume_24h_usd=18400000000.0,
+                liquidity_usd=1000000000.0,
+                inflow_usd_1h=9200000.0,
+                whale_buy_volume_usd_1h=4200000.0,
+                whale_sell_volume_usd_1h=1000000.0,
+                large_tx_count_1h=220,
+                unique_buyers_1h=680,
+                wallet_growth_1h=44,
+                price_change_1h=1.8,
+                price_change_24h=5.8,
+            ),
+        ]
+        return tokens
